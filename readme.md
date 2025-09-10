@@ -67,7 +67,7 @@ Returns a `Promise` that is fulfilled when `emitter` emits an event matching `ev
 **Note**: `event` is a string for a single event type, for example, `'data'`. To listen on multiple
 events, pass an array of strings, such as `['started', 'stopped']`.
 
-The returned promise has a `.cancel()` method, which when called, removes the event listeners and causes the promise to never be settled.
+The returned promise has a `.cancel()` method, which when called, removes the event listeners and causes the promise to never be settled. However, for new code, it's recommended to use the [`signal` option](#signal) instead.
 
 #### emitter
 
@@ -297,7 +297,26 @@ async function getOpenReadStream(file) {
 	.catch(console.error);
 ```
 
-## Tip
+## Tips
+
+### Migrating from `.cancel()` to `AbortSignal`
+
+If you're using `.cancel()` in existing code, here's how to migrate to the preferred `AbortSignal` approach:
+
+```js
+// Before
+const promise = pEvent(emitter, 'finish');
+// ... later
+promise.cancel();
+
+// After
+const controller = new AbortController();
+const promise = pEvent(emitter, 'finish', {
+	signal: controller.signal
+});
+// ... later
+controller.abort();
+```
 
 ### Dealing with calls that resolve with an error code
 
