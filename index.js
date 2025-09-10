@@ -36,12 +36,19 @@ export function pEventMultiple(emitter, event, options) {
 		const items = [];
 		const {addListener, removeListener} = normalizeEmitter(emitter);
 
-		const onItem = (...arguments_) => {
+		const onItem = async (...arguments_) => {
 			const value = options.multiArgs ? arguments_ : arguments_[0];
 
-			// eslint-disable-next-line unicorn/no-array-callback-reference
-			if (options.filter && !options.filter(value)) {
-				return;
+			if (options.filter) {
+				try {
+					if (!(await options.filter(value))) {
+						return;
+					}
+				} catch (error) {
+					cancel();
+					reject(error);
+					return;
+				}
 			}
 
 			items.push(value);
@@ -63,7 +70,10 @@ export function pEventMultiple(emitter, event, options) {
 			}
 
 			for (const rejectionEvent of options.rejectionEvents) {
-				removeListener(rejectionEvent, rejectHandler);
+				// Only remove rejection handler if we actually registered it
+				if (!events.includes(rejectionEvent)) {
+					removeListener(rejectionEvent, rejectHandler);
+				}
 			}
 		};
 
@@ -72,7 +82,11 @@ export function pEventMultiple(emitter, event, options) {
 		}
 
 		for (const rejectionEvent of options.rejectionEvents) {
-			addListener(rejectionEvent, rejectHandler);
+			// Skip registering rejection handler if we're already listening to this event
+			// as the main event takes priority (as documented)
+			if (!events.includes(rejectionEvent)) {
+				addListener(rejectionEvent, rejectHandler);
+			}
 		}
 
 		if (options.signal) {
@@ -223,13 +237,28 @@ export function pEventIterator(emitter, event, options) {
 		cancel();
 	};
 
-	const resolveHandler = (...arguments_) => {
+	const resolveHandler = async (...arguments_) => {
 		const value = options.multiArgs ? arguments_ : arguments_[0];
 
-		// eslint-disable-next-line unicorn/no-array-callback-reference
-		if (options.filter && !options.filter(value)) {
-			cancel();
-			return;
+		if (options.filter) {
+			try {
+				if (!(await options.filter(value))) {
+					cancel();
+					return;
+				}
+			} catch (filterError) {
+				cancel();
+				if (nextQueue.length > 0) {
+					const {reject} = nextQueue.shift();
+					reject(filterError);
+				} else {
+					// Store error for next iterator call
+					hasPendingError = true;
+					error = filterError;
+				}
+
+				return;
+			}
 		}
 
 		if (nextQueue.length > 0) {

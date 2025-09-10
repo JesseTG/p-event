@@ -535,3 +535,92 @@ test('`count` option should be a zero or more', async t => {
 		},
 	);
 });
+
+test('async filter function works', async t => {
+	const emitter = new EventEmitter();
+
+	const asyncFilter = async value => {
+		await delay(10);
+		return value % 2 === 0; // Only even numbers
+	};
+
+	(async () => {
+		await delay(100);
+		emitter.emit('test', 1);
+		emitter.emit('test', 2);
+		emitter.emit('test', 3);
+		emitter.emit('test', 4);
+	})();
+
+	t.is(await pEvent(emitter, 'test', {filter: asyncFilter}), 2);
+});
+
+test('async filter function with pEventMultiple', async t => {
+	const emitter = new EventEmitter();
+
+	const asyncFilter = async value => {
+		await delay(5);
+		return value > 10;
+	};
+
+	(async () => {
+		await delay(100);
+		emitter.emit('test', 5);
+		emitter.emit('test', 15);
+		emitter.emit('test', 8);
+		emitter.emit('test', 20);
+		emitter.emit('test', 25);
+	})();
+
+	const result = await pEventMultiple(emitter, 'test', {
+		filter: asyncFilter,
+		count: 2,
+	});
+
+	t.deepEqual(result, [15, 20]);
+});
+
+test('filter function that throws rejects the promise', async t => {
+	const emitter = new EventEmitter();
+
+	const buggyFilter = value => {
+		if (value === 2) {
+			throw new Error('Filter error');
+		}
+
+		return value > 5;
+	};
+
+	(async () => {
+		await delay(100);
+		emitter.emit('test', 1);
+		emitter.emit('test', 2); // This will throw and reject the promise
+	})();
+
+	await t.throwsAsync(pEvent(emitter, 'test', {filter: buggyFilter}), {
+		message: 'Filter error',
+	});
+});
+
+test('async filter function that throws rejects the promise', async t => {
+	const emitter = new EventEmitter();
+
+	const asyncFilter = async value => {
+		await delay(5);
+		if (value === 2) {
+			throw new Error('Async filter error');
+		}
+
+		return value > 5;
+	};
+
+	(async () => {
+		await delay(100);
+		emitter.emit('test', 1);
+		emitter.emit('test', 2); // This will throw and reject the promise
+	})();
+
+	await t.throwsAsync(pEvent(emitter, 'test', {filter: asyncFilter}), {
+		message: 'Async filter error',
+	});
+});

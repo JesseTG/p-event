@@ -14,7 +14,7 @@ export type Emitter<EventName extends string | symbol, EmittedType extends unkno
 
 export type FilterFunction<ElementType extends unknown | unknown[]> = (
 	value: ElementType
-) => boolean;
+) => boolean | Promise<boolean>;
 
 export type CancelablePromise<ResolveType> = {
 	cancel(): void;
@@ -51,15 +51,23 @@ export type Options<EmittedType extends unknown | unknown[]> = {
 	readonly timeout?: number;
 
 	/**
-	A filter function for accepting an event.
+	A filter function for accepting an event. Can be synchronous or asynchronous.
 
 	@example
 	```
 	import {pEvent} from 'p-event';
 	import emitter from './some-event-emitter';
 
+	// Synchronous filter
 	const result = await pEvent(emitter, '🦄', value => value > 3);
 	// Do something with first 🦄 event with a value greater than 3
+
+	// Asynchronous filter (e.g., API validation)
+	const result2 = await pEvent(emitter, 'data', async value => {
+		const isValid = await validateWithAPI(value);
+		return isValid;
+	});
+	// Do something with first 'data' event that passes async validation
 	```
 	*/
 	readonly filter?: FilterFunction<EmittedType>;

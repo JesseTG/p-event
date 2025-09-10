@@ -123,15 +123,26 @@ Time in milliseconds before timing out.
 
 Type: `Function`
 
-A filter function for accepting an event.
+A filter function for accepting an event. Can be synchronous or asynchronous.
 
 ```js
 import {pEvent} from 'p-event';
 import emitter from './some-event-emitter';
 
+// Synchronous filter
 const result = await pEvent(emitter, '🦄', value => value > 3);
 // Do something with first 🦄 event with a value greater than 3
+
+// Asynchronous filter (e.g., API validation)
+const result2 = await pEvent(emitter, 'data', async value => {
+	const isValid = await validateWithAPI(value);
+	return isValid;
+});
+// Do something with first 'data' event that passes async validation
 ```
+
+> [!NOTE]
+> If the filter function throws an error or returns a rejected promise, the promise returned by `pEvent` will be rejected with that error. If you want to handle filter errors gracefully, wrap your filter logic in a try-catch block and return `false` for invalid events.
 
 ##### signal
 
