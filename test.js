@@ -371,9 +371,13 @@ test('AbortSignal rejects when aborted', async t => {
 		emitter.emit('🦄', '🌈');
 	})();
 
-	await t.throwsAsync(pEvent(emitter, '🦄', {signal: AbortSignal.timeout(5)}), {
-		message: 'The operation was aborted due to timeout',
-	});
+	try {
+		await pEvent(emitter, '🦄', {signal: AbortSignal.timeout(5)});
+		t.fail('Expected rejection');
+	} catch (error) {
+		t.is(error.message, 'The operation was aborted due to timeout');
+	}
+
 	t.is(emitter.listenerCount('🦄'), 0);
 });
 

@@ -129,7 +129,7 @@ export function pEvent(emitter, event, options) {
 	};
 
 	const arrayPromise = pEventMultiple(emitter, event, options);
-	const promise = arrayPromise.then(array => array[0]);
+	const promise = arrayPromise.then(array => array[0]); // eslint-disable-line promise/prefer-await-to-then
 	promise.cancel = arrayPromise.cancel;
 
 	return promise;
