@@ -100,6 +100,18 @@ test('`.cancel()` method with `timeout` option', t => {
 	t.is(emitter.listenerCount('🦄'), 0);
 });
 
+test('`.cancel()` method clears timeout', async t => {
+	const emitter = new EventEmitter();
+	const promise = pEvent(emitter, '🦄', {timeout: 50});
+	promise.cancel();
+
+	// Wait longer than timeout to ensure it doesn't fire
+	await delay(100);
+
+	// If we get here without a timeout error, the test passes
+	t.pass('Timeout was properly cleared');
+});
+
 test('error on incompatible emitter', async t => {
 	await t.throwsAsync(pEvent({}, '🦄'), {
 		message: /not compatible/,

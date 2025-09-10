@@ -104,7 +104,12 @@ export function pEventMultiple(emitter, event, options) {
 
 	if (typeof options.timeout === 'number') {
 		const timeout = pTimeout(returnValue, {milliseconds: options.timeout});
-		timeout.cancel = cancel;
+		// When cancelling, also clear the timeout timer
+		timeout.cancel = () => {
+			cancel();
+			timeout.clear();
+		};
+
 		return timeout;
 	}
 
