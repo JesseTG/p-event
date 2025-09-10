@@ -84,6 +84,109 @@ test('`multiArgs` option on reject', async t => {
 	}), ['💩', '💩']);
 });
 
+test('`rejectionMultiArgs` option enabled - pEvent', async t => {
+	const emitter = new EventEmitter();
+
+	(async () => {
+		await delay(200);
+		emitter.emit('error', 'arg1', 'arg2', 'arg3');
+	})();
+
+	try {
+		await pEvent(emitter, '🦄', {
+			rejectionMultiArgs: true,
+			rejectionEvents: ['error'],
+		});
+		t.fail('Should have rejected');
+	} catch (error) {
+		t.deepEqual(error, ['arg1', 'arg2', 'arg3']);
+	}
+});
+
+test('`rejectionMultiArgs` option disabled (default) - pEvent', async t => {
+	const emitter = new EventEmitter();
+
+	(async () => {
+		await delay(200);
+		emitter.emit('error', 'arg1', 'arg2', 'arg3');
+	})();
+
+	try {
+		await pEvent(emitter, '🦄', {
+			rejectionMultiArgs: false,
+			rejectionEvents: ['error'],
+		});
+		t.fail('Should have rejected');
+	} catch (error) {
+		t.is(error, 'arg1');
+	}
+});
+
+test('`rejectionMultiArgs` option enabled - pEventMultiple', async t => {
+	const emitter = new EventEmitter();
+
+	(async () => {
+		await delay(200);
+		emitter.emit('error', 'arg1', 'arg2', 'arg3');
+	})();
+
+	try {
+		await pEventMultiple(emitter, '🦄', {
+			rejectionMultiArgs: true,
+			rejectionEvents: ['error'],
+			count: 2,
+		});
+		t.fail('Should have rejected');
+	} catch (error) {
+		t.deepEqual(error, ['arg1', 'arg2', 'arg3']);
+	}
+});
+
+test('`rejectionMultiArgs` option enabled - pEventIterator', async t => {
+	const {pEventIterator} = await import('./index.js');
+	const emitter = new EventEmitter();
+
+	(async () => {
+		await delay(200);
+		emitter.emit('error', 'arg1', 'arg2', 'arg3');
+	})();
+
+	const iterator = pEventIterator(emitter, '🦄', {
+		rejectionMultiArgs: true,
+		rejectionEvents: ['error'],
+	});
+
+	try {
+		// eslint-disable-next-line no-unused-vars
+		for await (const value of iterator) {
+			// Should not reach here
+			t.fail('Should have rejected');
+		}
+
+		t.fail('Expected rejection');
+	} catch (error) {
+		t.deepEqual(error, ['arg1', 'arg2', 'arg3']);
+	}
+});
+
+test('`rejectionMultiArgs` default behavior preserves backward compatibility', async t => {
+	const emitter = new EventEmitter();
+
+	(async () => {
+		await delay(200);
+		emitter.emit('error', new Error('test error'));
+	})();
+
+	try {
+		await pEvent(emitter, '🦄', {
+			rejectionEvents: ['error'],
+		});
+		t.fail('Should have rejected');
+	} catch (error) {
+		t.is(error.message, 'test error');
+	}
+});
+
 test('`.cancel()` method', t => {
 	const emitter = new EventEmitter();
 	const promise = pEvent(emitter, '🦄');

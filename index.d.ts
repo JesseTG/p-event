@@ -35,7 +35,27 @@ export type Options<EmittedType extends unknown | unknown[]> = {
 	readonly rejectionEvents?: ReadonlyArray<string | symbol>;
 
 	/**
-	By default, the promisified function will only return the first argument from the event callback, which works fine for most APIs. This option can be useful for APIs that return multiple arguments in the callback. Turning this on will make it return an array of all arguments from the callback, instead of just the first argument. This also applies to rejections.
+	By default, rejection events will only return the first argument from the event callback. Turning this on will make it return an array of all arguments from the rejection event callback.
+
+	@default false
+
+	@example
+	```
+	import {pEvent} from 'p-event';
+	import emitter from './some-event-emitter';
+
+	try {
+		await pEvent(emitter, 'finish', {rejectionMultiArgs: true});
+	} catch (error) {
+		// If rejection event emits multiple arguments, error will be an array
+		console.log(error); // ['error', 'details', 'code']
+	}
+	```
+	*/
+	readonly rejectionMultiArgs?: boolean;
+
+	/**
+	By default, the promisified function will only return the first argument from the event callback, which works fine for most APIs. This option can be useful for APIs that return multiple arguments in the callback. Turning this on will make it return an array of all arguments from the callback, instead of just the first argument.
 
 	@default false
 

@@ -20,6 +20,7 @@ export function pEventMultiple(emitter, event, options) {
 		options = {
 			rejectionEvents: ['error'],
 			multiArgs: false,
+			rejectionMultiArgs: false,
 			resolveImmediately: false,
 			...options,
 		};
@@ -59,9 +60,9 @@ export function pEventMultiple(emitter, event, options) {
 			}
 		};
 
-		const rejectHandler = error => {
+		const rejectHandler = (...arguments_) => {
 			cancel();
-			reject(error);
+			reject(options.rejectionMultiArgs ? arguments_ : arguments_[0]);
 		};
 
 		cancel = () => {
@@ -147,6 +148,7 @@ export function pEventIterator(emitter, event, options) {
 		resolutionEvents: [],
 		limit: Number.POSITIVE_INFINITY,
 		multiArgs: false,
+		rejectionMultiArgs: false,
 		...options,
 	};
 
@@ -230,7 +232,7 @@ export function pEventIterator(emitter, event, options) {
 	};
 
 	const rejectHandler = (...arguments_) => {
-		error = options.multiArgs ? arguments_ : arguments_[0];
+		error = options.rejectionMultiArgs ? arguments_ : arguments_[0];
 
 		if (nextQueue.length > 0) {
 			const {reject} = nextQueue.shift();
